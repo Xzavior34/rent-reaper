@@ -1,14 +1,11 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Trash2, ShieldCheck, Loader2 } from 'lucide-react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useDustScanner, ScanResult } from '@/hooks/useDustScanner';
+import { ScanResult } from '@/hooks/useDustScanner';
 import { StatCard } from '@/components/StatCard';
 import { DustTable } from '@/components/DustTable';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 
 interface DashboardProps {
   scanResult: ScanResult;

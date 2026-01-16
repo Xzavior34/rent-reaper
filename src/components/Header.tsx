@@ -6,8 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Zap, Shield } from 'lucide-react';
 
 export const Header = () => {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { network, setNetwork, isMainnet } = useNetwork();
+
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -30,23 +34,43 @@ export const Header = () => {
         <div className="flex items-center gap-4">
           {/* Network Toggle */}
           <div className="flex items-center gap-3 bg-secondary/50 rounded-lg px-4 py-2">
-            <span className={`text-sm font-mono ${!isMainnet ? 'text-primary' : 'text-muted-foreground'}`}>
-              Devnet
-            </span>
+            <div className="flex items-center gap-2">
+              {/* Pulsing Network Indicator */}
+              <div 
+                className={`w-2 h-2 rounded-full pulse-dot ${
+                  isMainnet ? 'bg-primary' : 'bg-accent'
+                }`} 
+              />
+              <span className={`text-sm font-mono ${!isMainnet ? 'text-accent' : 'text-muted-foreground'}`}>
+                DEV
+              </span>
+            </div>
             <Switch
               checked={isMainnet}
               onCheckedChange={(checked) => setNetwork(checked ? 'mainnet-beta' : 'devnet')}
             />
-            <span className={`text-sm font-mono ${isMainnet ? 'text-primary' : 'text-muted-foreground'}`}>
-              Mainnet
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-mono ${isMainnet ? 'text-primary' : 'text-muted-foreground'}`}>
+                MAIN
+              </span>
+            </div>
             {isMainnet && (
-              <Badge variant="outline" className="ml-2 text-accent border-accent">
+              <Badge variant="outline" className="ml-2 text-primary border-primary">
                 <Shield className="w-3 h-3 mr-1" />
                 LIVE
               </Badge>
             )}
           </div>
+
+          {/* Connected Wallet Address */}
+          {connected && publicKey && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 border border-border">
+              <div className="w-2 h-2 rounded-full bg-primary pulse-dot" />
+              <code className="text-xs font-mono text-muted-foreground">
+                {truncateAddress(publicKey.toBase58())}
+              </code>
+            </div>
+          )}
 
           {/* Wallet Button */}
           <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-lg !h-10 !font-semibold" />

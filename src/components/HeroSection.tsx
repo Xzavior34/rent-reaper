@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Zap, Shield, Clock, ArrowRight } from 'lucide-react';
+import { Zap, Shield, Clock, ArrowRight, Cpu, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TypingEffect } from '@/components/TypingEffect';
+import { useState } from 'react';
 
 interface HeroSectionProps {
   onScan: () => void;
@@ -11,6 +13,7 @@ interface HeroSectionProps {
 
 export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
   const { connected } = useWallet();
+  const [showSubtext, setShowSubtext] = useState(false);
 
   return (
     <section className="relative py-20 overflow-hidden">
@@ -39,61 +42,91 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             <span className="text-sm font-mono text-primary">Non-Custodial & Secure</span>
           </motion.div>
 
-          {/* Main Headline */}
+          {/* Main Headline with Typing Effect */}
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="text-foreground">Stop Leaking Capital.</span>
+            <span className="text-foreground">
+              <TypingEffect 
+                text="Stop Leaking Capital." 
+                speed={40}
+                delay={500}
+                onComplete={() => setShowSubtext(true)}
+              />
+            </span>
             <br />
-            <span className="text-primary text-glow-green">Reclaim Your Rent.</span>
+            {showSubtext && (
+              <motion.span 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-primary text-glow-green"
+              >
+                <TypingEffect 
+                  text="Reclaim Your Rent." 
+                  speed={40}
+                  delay={200}
+                />
+              </motion.span>
+            )}
           </h1>
 
           {/* Subtext */}
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: showSubtext ? 1 : 0 }}
+            transition={{ delay: 0.5 }}
+            className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto font-mono"
+          >
             Automated analysis for Solana wallets. Find abandoned token accounts,
             recover locked SOL, and clean up your wallet in one click.
-          </p>
+          </motion.p>
 
           {/* Feature Pills */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: showSubtext ? 1 : 0 }}
+            transition={{ delay: 0.7 }}
+            className="flex flex-wrap justify-center gap-4 mb-12"
+          >
             {[
               { icon: Zap, text: 'Instant Analysis' },
-              { icon: Shield, text: 'Client-Side Only' },
+              { icon: Lock, text: 'Client-Side Only' },
               { icon: Clock, text: 'Safe Mode Protection' },
+              { icon: Cpu, text: 'Batch Processing' },
             ].map((feature, index) => (
               <motion.div
                 key={feature.text}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
+                transition={{ delay: 0.8 + index * 0.1 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
               >
                 <feature.icon className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">{feature.text}</span>
+                <span className="text-sm font-medium font-mono">{feature.text}</span>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* CTA Button */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6 }}
+            animate={{ opacity: showSubtext ? 1 : 0, scale: showSubtext ? 1 : 0.95 }}
+            transition={{ delay: 1 }}
           >
             {!connected ? (
-              <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-xl !h-14 !px-8 !text-lg !font-bold pulse-glow" />
+              <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-xl !h-14 !px-8 !text-lg !font-bold pulse-glow !font-mono" />
             ) : (
               <Button
                 size="lg"
                 onClick={onScan}
                 disabled={isScanning}
-                className="h-14 px-8 text-lg font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 pulse-glow"
+                className="h-14 px-8 text-lg font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 pulse-glow font-mono"
               >
                 {isScanning ? (
                   <>
-                    <span className="animate-pulse">Scanning...</span>
+                    <span className="animate-pulse">SCANNING...</span>
                   </>
                 ) : (
                   <>
-                    Scan for Leaks
+                    SCAN FOR LEAKS
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </>
                 )}
@@ -106,27 +139,35 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto"
+              transition={{ delay: 1.5 }}
+              className="mt-16"
             >
-              {[
-                { label: 'Accounts Scanned', value: '142', suffix: '' },
-                { label: 'Dust Detected', value: '23', suffix: '' },
-                { label: 'Recoverable', value: '0.0469', suffix: 'SOL' },
-              ].map((stat, index) => (
-                <div
-                  key={stat.label}
-                  className="p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm"
-                >
-                  <p className="text-sm text-muted-foreground mb-2">{stat.label}</p>
-                  <p className="text-3xl font-bold font-mono text-primary">
-                    {stat.value}
-                    {stat.suffix && (
-                      <span className="text-lg ml-1 text-muted-foreground">{stat.suffix}</span>
-                    )}
-                  </p>
-                </div>
-              ))}
+              <p className="text-xs text-muted-foreground font-mono mb-6 uppercase tracking-wider">
+                // Demo Mode - Connect Wallet for Live Data
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                {[
+                  { label: 'Accounts Scanned', value: '142', suffix: '', color: 'text-foreground' },
+                  { label: 'Dust Detected', value: '42', suffix: '', color: 'text-accent text-glow-orange' },
+                  { label: 'Recoverable', value: '0.0856', suffix: 'SOL', color: 'text-primary text-glow-green' },
+                ].map((stat, index) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.6 + index * 0.1 }}
+                    className="p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm glow-green"
+                  >
+                    <p className="text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">{stat.label}</p>
+                    <p className={`text-4xl font-bold font-mono ${stat.color}`}>
+                      {stat.value}
+                      {stat.suffix && (
+                        <span className="text-lg ml-1 text-muted-foreground">{stat.suffix}</span>
+                      )}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
           )}
         </motion.div>
