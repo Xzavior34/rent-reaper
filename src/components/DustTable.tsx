@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Copy, Check, Shield, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Copy, Check, Shield, AlertCircle, CheckCircle, Loader2, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { DustAccount } from '@/hooks/useDustScanner';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,6 +14,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface DustTableProps {
   accounts: DustAccount[];
@@ -44,8 +49,21 @@ export const DustTable = ({
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
-  const getStatusBadge = (status: DustAccount['status']) => {
-    switch (status) {
+  const getAccountAge = (createdAt?: number): string => {
+    if (!createdAt) return '—';
+    const now = Date.now();
+    const ageMs = now - createdAt;
+    const days = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((ageMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days === 0) {
+      return `${hours}h`;
+    }
+    return `${days}d`;
+  };
+
+  const getStatusBadge = (account: DustAccount) => {
+    switch (account.status) {
       case 'pending':
         return (
           <Badge variant="outline" className="font-mono text-xs">
@@ -75,10 +93,17 @@ export const DustTable = ({
         );
       case 'protected':
         return (
-          <Badge variant="secondary" className="font-mono text-xs">
-            <Shield className="w-3 h-3 mr-1" />
-            PROTECTED
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="secondary" className="font-mono text-xs cursor-help">
+                <Shield className="w-3 h-3 mr-1" />
+                SKIPPED
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-mono text-xs">Too New (&lt;24h old)</p>
+            </TooltipContent>
+          </Tooltip>
         );
     }
   };
@@ -91,8 +116,8 @@ export const DustTable = ({
         className="text-center py-12 px-4 rounded-xl bg-card border border-border"
       >
         <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
-        <h3 className="text-xl font-semibold mb-2">No Dust Found</h3>
-        <p className="text-muted-foreground">
+        <h3 className="text-xl font-semibold mb-2 font-mono">NO DUST FOUND</h3>
+        <p className="text-muted-foreground font-mono">
           Your wallet is clean! No empty token accounts detected.
         </p>
       </motion.div>
@@ -109,17 +134,17 @@ export const DustTable = ({
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h3 className="font-semibold font-mono text-lg">KILL LIST</h3>
+          <h3 className="font-semibold font-mono text-lg text-primary">// KILL LIST</h3>
           <Badge variant="outline" className="font-mono">
             {accounts.length} ACCOUNTS
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onSelectAll} disabled={allSelected}>
-            Select All
+          <Button variant="ghost" size="sm" onClick={onSelectAll} disabled={allSelected} className="font-mono text-xs">
+            SELECT ALL
           </Button>
-          <Button variant="ghost" size="sm" onClick={onDeselectAll} disabled={selectedCount === 0}>
-            Deselect All
+          <Button variant="ghost" size="sm" onClick={onDeselectAll} disabled={selectedCount === 0} className="font-mono text-xs">
+            DESELECT
           </Button>
         </div>
       </div>
@@ -130,10 +155,16 @@ export const DustTable = ({
           <TableHeader>
             <TableRow className="hover:bg-transparent border-border">
               <TableHead className="w-12"></TableHead>
-              <TableHead className="font-mono text-xs">ACCOUNT ADDRESS</TableHead>
-              <TableHead className="font-mono text-xs">TYPE</TableHead>
-              <TableHead className="font-mono text-xs text-right">BALANCE</TableHead>
-              <TableHead className="font-mono text-xs text-right">STATUS</TableHead>
+              <TableHead className="font-mono text-xs text-primary">ADDRESS</TableHead>
+              <TableHead className="font-mono text-xs text-primary">TYPE</TableHead>
+              <TableHead className="font-mono text-xs text-primary">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  AGE
+                </div>
+              </TableHead>
+              <TableHead className="font-mono text-xs text-right text-primary">BALANCE</TableHead>
+              <TableHead className="font-mono text-xs text-right text-primary">STATUS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -142,10 +173,10 @@ export const DustTable = ({
                 key={account.address}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 * index }}
+                transition={{ delay: 0.03 * index }}
                 className={`border-border hover:bg-secondary/30 ${
                   account.status === 'closed' ? 'opacity-50' : ''
-                }`}
+                } ${account.status === 'protected' ? 'opacity-60' : ''}`}
               >
                 <TableCell>
                   <Checkbox
@@ -179,10 +210,17 @@ export const DustTable = ({
                     {account.type}
                   </Badge>
                 </TableCell>
+                <TableCell>
+                  <span className={`font-mono text-sm ${
+                    account.status === 'protected' ? 'text-accent' : 'text-muted-foreground'
+                  }`}>
+                    {getAccountAge(account.createdAt)}
+                  </span>
+                </TableCell>
                 <TableCell className="text-right font-mono text-sm">
                   {account.balance.toFixed(6)}
                 </TableCell>
-                <TableCell className="text-right">{getStatusBadge(account.status)}</TableCell>
+                <TableCell className="text-right">{getStatusBadge(account)}</TableCell>
               </motion.tr>
             ))}
           </TableBody>

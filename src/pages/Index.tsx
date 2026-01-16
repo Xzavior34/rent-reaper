@@ -63,9 +63,9 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background relative">
-      {/* Scanlines overlay */}
-      <div className="fixed inset-0 pointer-events-none scanlines opacity-20 z-50" />
+    <div className="min-h-screen flex flex-col bg-background relative crt-flicker">
+      {/* CRT Scanlines overlay */}
+      <div className="fixed inset-0 pointer-events-none scanlines z-50" />
 
       <Header />
 

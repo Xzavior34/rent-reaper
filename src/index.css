@@ -118,28 +118,22 @@
                  0 0 20px hsl(var(--glow-orange) / 0.3);
   }
 
-  /* Scanline effect */
-  .scanlines::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+  /* CRT Scanline effect overlay */
+  .scanlines {
+    pointer-events: none;
     background: repeating-linear-gradient(
       0deg,
       transparent,
       transparent 2px,
-      hsl(var(--scanline)) 2px,
-      hsl(var(--scanline)) 4px
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 4px
     );
-    pointer-events: none;
-    z-index: 10;
   }
 
   /* Terminal cursor blink */
   .cursor-blink::after {
     content: '▋';
+    color: hsl(var(--primary));
     animation: blink 1s step-end infinite;
   }
 
@@ -164,12 +158,39 @@
     }
   }
 
+  /* Network indicator pulse */
+  .pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.2);
+    }
+  }
+
   /* Grid background */
   .grid-bg {
     background-image: 
       linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
       linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
     background-size: 50px 50px;
+  }
+
+  /* CRT flicker effect */
+  .crt-flicker {
+    animation: crt-flicker 0.15s infinite;
+  }
+
+  @keyframes crt-flicker {
+    0% { opacity: 0.97; }
+    50% { opacity: 1; }
+    100% { opacity: 0.98; }
   }
 }
 
