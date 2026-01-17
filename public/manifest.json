@@ -1,0 +1,17 @@
+{
+  "name": "KoraKeep",
+  "short_name": "KoraKeep",
+  "description": "Solana Dust Reclamation Terminal - Reclaim SOL from empty token accounts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00FF88",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
