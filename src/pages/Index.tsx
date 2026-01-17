@@ -4,13 +4,17 @@ import { Header } from '@/components/Header';
 import { HeroSection } from '@/components/HeroSection';
 import { Dashboard } from '@/components/Dashboard';
 import { Footer } from '@/components/Footer';
+import { TransactionPreview } from '@/components/TransactionPreview';
 import { useDustScanner } from '@/hooks/useDustScanner';
 import { useToast } from '@/hooks/use-toast';
+import { useConfetti } from '@/hooks/useConfetti';
 
 const Index = () => {
   const { connected } = useWallet();
   const { toast } = useToast();
+  const { fireConfetti } = useConfetti();
   const [safeModeEnabled, setSafeModeEnabled] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
   const {
     scanResult,
@@ -34,6 +38,14 @@ const Index = () => {
     [scanForDust, safeModeEnabled, toast]
   );
 
+  const handleShowPreview = useCallback(() => {
+    setShowPreview(true);
+  }, []);
+
+  const handleClosePreview = useCallback(() => {
+    setShowPreview(false);
+  }, []);
+
   const handleReclaim = useCallback(async () => {
     if (!scanResult) return;
 
@@ -41,11 +53,16 @@ const Index = () => {
       (a) => a.selected && a.status === 'pending'
     );
 
+    setShowPreview(false);
+    
     const result = await reclaimDust(selectedAccounts);
 
     if (result.success) {
+      // Fire celebration confetti!
+      fireConfetti();
+      
       toast({
-        title: '✓ Reclaim Successful!',
+        title: '🎉 Reclaim Successful!',
         description: `Reclaimed ${result.reclaimed.toFixed(4)} SOL from ${result.closed} accounts.`,
         className: 'bg-primary/10 border-primary',
       });
@@ -56,11 +73,15 @@ const Index = () => {
         variant: 'destructive',
       });
     }
-  }, [scanResult, reclaimDust, toast]);
+  }, [scanResult, reclaimDust, toast, fireConfetti]);
 
   const handleSafeModeChange = useCallback((enabled: boolean) => {
     setSafeModeEnabled(enabled);
   }, []);
+
+  const selectedAccounts = scanResult?.accounts.filter(
+    (a) => a.selected && a.status === 'pending'
+  ) || [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative crt-flicker">
@@ -78,7 +99,7 @@ const Index = () => {
             isScanning={isScanning}
             isReclaiming={isReclaiming}
             onScan={handleScan}
-            onReclaim={handleReclaim}
+            onReclaim={handleShowPreview}
             onToggleSelection={toggleAccountSelection}
             onSelectAll={selectAll}
             onDeselectAll={deselectAll}
@@ -89,6 +110,16 @@ const Index = () => {
       </main>
 
       <Footer />
+
+      {/* Transaction Preview Modal */}
+      <TransactionPreview
+        isOpen={showPreview}
+        onClose={handleClosePreview}
+        onConfirm={handleReclaim}
+        accounts={selectedAccounts}
+        totalSol={scanResult?.recoverableSol || 0}
+        isLoading={isReclaiming}
+      />
     </div>
   );
 };
