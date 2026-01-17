@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowRight, Wallet, Coins, FileCheck, AlertTriangle } from 'lucide-react';
+import { X, ArrowRight, Wallet, Coins, FileCheck, AlertTriangle, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DustAccount } from '@/hooks/useDustScanner';
+import { useSolPrice } from '@/hooks/useSolPrice';
 
 interface TransactionPreviewProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const TransactionPreview = ({
   totalSol,
   isLoading = false,
 }: TransactionPreviewProps) => {
+  const { solPrice, formatUsd } = useSolPrice();
   const batchCount = Math.ceil(accounts.length / 20);
   const estimatedFee = 0.000005 * batchCount; // ~5000 lamports per tx
   const netReclaim = totalSol - estimatedFee;
@@ -92,6 +94,12 @@ export const TransactionPreview = ({
                   <span className="text-xs font-mono text-primary">
                     {netReclaim.toFixed(4)} SOL
                   </span>
+                  {solPrice && (
+                    <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      {formatUsd(netReclaim)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -130,7 +138,14 @@ export const TransactionPreview = ({
                 
                 <div className="flex justify-between items-center p-3 rounded-lg bg-primary/10 border border-primary/30">
                   <span className="font-semibold text-foreground">Net reclaim</span>
-                  <span className="font-bold text-primary text-lg">+{netReclaim.toFixed(4)} SOL</span>
+                  <div className="text-right">
+                    <span className="font-bold text-primary text-lg">+{netReclaim.toFixed(4)} SOL</span>
+                    {solPrice && (
+                      <span className="block text-sm text-muted-foreground">
+                        ≈ {formatUsd(netReclaim)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
