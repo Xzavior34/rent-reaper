@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { Search, Trash2, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, Trash2, ShieldCheck, Loader2, DollarSign, TrendingUp } from 'lucide-react';
 import { ScanResult } from '@/hooks/useDustScanner';
 import { StatCard } from '@/components/StatCard';
 import { DustTable } from '@/components/DustTable';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useSolPrice } from '@/hooks/useSolPrice';
 
 interface DashboardProps {
   scanResult: ScanResult;
@@ -32,6 +33,8 @@ export const Dashboard = ({
   safeModeEnabled,
   onSafeModeChange,
 }: DashboardProps) => {
+  const { solPrice, formatUsd, isLoading: priceLoading } = useSolPrice();
+  
   const selectedCount = scanResult.accounts.filter(
     (a) => a.selected && a.status === 'pending'
   ).length;
@@ -39,6 +42,10 @@ export const Dashboard = ({
   const protectedCount = scanResult.accounts.filter(
     (a) => a.status === 'protected'
   ).length;
+  
+  const selectedSol = scanResult.accounts
+    .filter((a) => a.selected && a.status === 'pending')
+    .reduce((sum, a) => sum + a.balance, 0);
 
   return (
     <section className="py-12">
@@ -87,8 +94,21 @@ export const Dashboard = ({
           </Button>
         </motion.div>
 
+        {/* SOL Price Indicator */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 mb-4 text-sm"
+        >
+          <TrendingUp className="w-4 h-4 text-primary" />
+          <span className="text-muted-foreground">SOL Price:</span>
+          <span className="font-mono text-primary">
+            {priceLoading ? '...' : solPrice ? `$${solPrice.toFixed(2)}` : 'N/A'}
+          </span>
+        </motion.div>
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatCard
             label="Total Scanned"
             value={scanResult.totalScanned}
@@ -111,6 +131,15 @@ export const Dashboard = ({
             icon={ShieldCheck}
             variant="success"
             delay={0.2}
+          />
+          <StatCard
+            label="USD Value"
+            value={solPrice ? scanResult.recoverableSol * solPrice : 0}
+            prefix="$"
+            decimals={2}
+            icon={DollarSign}
+            variant="success"
+            delay={0.3}
           />
         </div>
 
@@ -143,7 +172,7 @@ export const Dashboard = ({
               ) : (
                 <>
                   <Trash2 className="w-6 h-6 mr-3" />
-                  Sweep & Reclaim ({selectedCount} accounts • {scanResult.recoverableSol.toFixed(4)} SOL)
+                  Sweep & Reclaim ({selectedCount} accounts • {selectedSol.toFixed(4)} SOL {solPrice ? `≈ ${formatUsd(selectedSol)}` : ''})
                 </>
               )}
             </Button>

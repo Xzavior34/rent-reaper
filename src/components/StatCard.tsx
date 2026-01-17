@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 interface StatCardProps {
   label: string;
   value: number;
+  prefix?: string;
   suffix?: string;
   decimals?: number;
   icon: LucideIcon;
@@ -15,6 +16,7 @@ interface StatCardProps {
 export const StatCard = ({
   label,
   value,
+  prefix = '',
   suffix = '',
   decimals = 0,
   icon: Icon,
@@ -76,6 +78,7 @@ export const StatCard = ({
         </div>
       </div>
       <p className={`text-4xl font-bold font-mono ${textStyles[variant]}`}>
+        {prefix && <span className="text-lg mr-0.5">{prefix}</span>}
         {decimals > 0 ? displayValue.toFixed(decimals) : Math.floor(displayValue)}
         {suffix && <span className="text-lg ml-1 text-muted-foreground">{suffix}</span>}
       </p>
