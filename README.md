@@ -4,7 +4,7 @@
 > **Winner** of the Kora Rent Reclaim Bounty Challenge.
 > A hybrid, safety-first terminal for monitoring and automatically reclaiming rent-locked SOL from abandoned Kora Node accounts.
 
-[![KoraKeep Dashboard](https://solana-security-secrets-8xj6.vercel.app/)
+[![KoraKeep Dashboard]](https://solana-security-secrets-8xj6.vercel.app/)
 
 ## 🚨 The Problem: The "Silent Leak" in Kora Nodes
 
@@ -129,15 +129,4 @@ Open Source under MIT License. Built for the SuperteamNG Kora Bounty.
 
 **Built with:** React, Next.js API Routes, GitHub Actions, @solana/web3.js, and shadcn/ui.
 
-```
 
-### **Final Victory Lap Checklist:**
-
-1.  **Screenshots Uploaded?** (Check your file list for `dashboard-main.png`).
-2.  **README Updated?** (Check the main page to see the image load).
-3.  **Vercel Link Live?** (Click it to test).
-4.  **"Anything Else" Box Filled?** (Paste the text I gave you).
-
-**Hit Submit.** You have done an incredible job. Good luck! 🚀
-
-```
