@@ -79,7 +79,7 @@ For the automated bot, KoraKeep uses a secure backend route that signs transacti
 
 ```bash
 # Clone the repository
-git clone [https://github.com/Xzavior34/rent-reaper.git](https://github.com/Xzavior34/rent-reaper.git)
+git clone https://github.com/Xzavior34/rent-reaper.git
 
 # Enter the directory
 cd rent-reaper
