@@ -1,12 +1,10 @@
 
-
-```markdown
 # 🛡️ KoraKeep: Automated Rent Reclamation Terminal
 
 > **Winner** of the Kora Rent Reclaim Bounty Challenge.
 > A hybrid, safety-first terminal for monitoring and automatically reclaiming rent-locked SOL from abandoned Kora Node accounts.
 
-[![KoraKeep Dashboard](dashboard-main.png)](https://solana-security-secrets-8xj6.vercel.app/)
+[![KoraKeep Dashboard](https://solana-security-secrets-8xj6.vercel.app/)
 
 ## 🚨 The Problem: The "Silent Leak" in Kora Nodes
 
