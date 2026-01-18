@@ -1,17 +1,18 @@
 
+
+```markdown
 # 🛡️ KoraKeep: Automated Rent Reclamation Terminal
 
 > **Winner** of the Kora Rent Reclaim Bounty Challenge.
 > A hybrid, safety-first terminal for monitoring and automatically reclaiming rent-locked SOL from abandoned Kora Node accounts.
 
-*[https://solana-security-secrets-8xj6.vercel.app/](https://solana-security-secrets-8xj6.vercel.app/)*
+[![KoraKeep Dashboard](dashboard-main.png)](https://solana-security-secrets-8xj6.vercel.app/)
 
 ## 🚨 The Problem: The "Silent Leak" in Kora Nodes
 
 Kora nodes facilitate gasless transactions by sponsoring accounts and wrapping SOL. While this creates a seamless user experience, it introduces a hidden operational cost: **Rent Leakage**.
 
 When a Kora node (or any relayer) operates, it often creates:
-
 1. **Temporary wSOL Accounts:** Used to unwrap SOL for fees.
 2. **Token Accounts:** Created for intermediate transfers.
 
@@ -80,7 +81,7 @@ For the automated bot, KoraKeep uses a secure backend route that signs transacti
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/korakeep.git
+git clone [https://github.com/YOUR_USERNAME/korakeep.git](https://github.com/YOUR_USERNAME/korakeep.git)
 
 # Enter the directory
 cd korakeep
@@ -105,6 +106,7 @@ To let KoraKeep run while you sleep, set up the backend worker:
 
 1. **Configure Environment:**
 Create a `.env.local` file with your secure credentials:
+
 ```env
 # The Private Key of the Operator Wallet (Array format or Base58)
 KORA_OPERATOR_KEY=[123, 45, ...]
@@ -114,14 +116,12 @@ CRON_SECRET=my_super_secret_password
 
 ```
 
-
 2. **Deploy to Vercel/Cron:**
 KoraKeep includes a GitHub Action (`.github/workflows/cron.yml`) that hits your API endpoint every 6 hours.
+
 * Push to GitHub.
 * Add `CRON_SECRET` to your Repository Secrets.
 * The bot is now live! 🟢
-
-
 
 ## 📜 License
 
@@ -130,3 +130,16 @@ Open Source under MIT License. Built for the SuperteamNG Kora Bounty.
 ---
 
 **Built with:** React, Next.js API Routes, GitHub Actions, @solana/web3.js, and shadcn/ui.
+
+```
+
+### **Final Victory Lap Checklist:**
+
+1.  **Screenshots Uploaded?** (Check your file list for `dashboard-main.png`).
+2.  **README Updated?** (Check the main page to see the image load).
+3.  **Vercel Link Live?** (Click it to test).
+4.  **"Anything Else" Box Filled?** (Paste the text I gave you).
+
+**Hit Submit.** You have done an incredible job. Good luck! 🚀
+
+```
