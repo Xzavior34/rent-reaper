@@ -1,0 +1,75 @@
+name: KoraKeep Auto-Sweep
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      safe_mode:
+        description: 'Enable Safe Mode (skip accounts < 24h old)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  auto-sweep:
+    name: 🧹 Sweep Dust Accounts
+    runs-on: ubuntu-latest
+    
+    # Only run if secrets are configured
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule }}
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: 📚 Install Dependencies
+        run: bun install
+
+      - name: 🔑 Validate Secrets
+        run: |
+          if [ -z "${{ secrets.KORA_OPERATOR_KEY }}" ]; then
+            echo "❌ KORA_OPERATOR_KEY secret is not set!"
+            echo "Please add your wallet private key to repository secrets."
+            exit 1
+          fi
+          echo "✅ Secrets validated"
+
+      - name: 🤖 Run Auto-Sweep
+        env:
+          KORA_OPERATOR_KEY: ${{ secrets.KORA_OPERATOR_KEY }}
+          HELIUS_RPC_URL: ${{ secrets.HELIUS_RPC_URL }}
+          SAFE_MODE: ${{ github.event.inputs.safe_mode || 'true' }}
+        run: |
+          echo "🚀 Starting KoraKeep Auto-Sweep..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          bun run scripts/auto-sweep.ts
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: 📊 Upload Sweep Log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sweep-log-${{ github.run_id }}
+          path: sweep-log.json
+          retention-days: 30
+
+      - name: 📢 Notify on Failure
+        if: failure()
+        run: |
+          echo "::error::Auto-sweep failed! Check the logs above for details."
+          echo "Common issues:"
+          echo "  - Invalid private key format"
+          echo "  - RPC connection issues"
+          echo "  - Network congestion"

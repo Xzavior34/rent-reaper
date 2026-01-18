@@ -3,6 +3,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useNetwork } from '@/hooks/useNetwork';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { BotStatus } from '@/components/BotStatus';
 import { Zap, Shield } from 'lucide-react';
 
 export const Header = () => {
@@ -61,6 +62,9 @@ export const Header = () => {
               </Badge>
             )}
           </div>
+
+          {/* Bot Status Indicator */}
+          <BotStatus className="hidden md:flex" />
 
           {/* Connected Wallet Address */}
           {connected && publicKey && (
