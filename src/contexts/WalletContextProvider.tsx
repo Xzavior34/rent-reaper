@@ -7,6 +7,7 @@ import {
   TorusWalletAdapter,
   LedgerWalletAdapter,
   CoinbaseWalletAdapter,
+  TrustWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { clusterApiUrl } from '@solana/web3.js';
@@ -32,6 +33,7 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
+      new TrustWalletAdapter(),
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
       new CoinbaseWalletAdapter(),
