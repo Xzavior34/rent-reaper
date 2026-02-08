@@ -20,6 +20,7 @@ const Index = () => {
     scanResult,
     isScanning,
     isReclaiming,
+    scanError,
     scanForDust,
     reclaimDust,
     toggleAccountSelection,
@@ -29,11 +30,20 @@ const Index = () => {
 
   const handleScan = useCallback(
     async (safeMode: boolean = safeModeEnabled) => {
-      await scanForDust(safeMode);
-      toast({
-        title: 'Scan Complete',
-        description: 'Your wallet has been analyzed for dust accounts.',
-      });
+      const result = await scanForDust(safeMode);
+      
+      if (result.success) {
+        toast({
+          title: 'Scan Complete',
+          description: 'Your wallet has been analyzed for dust accounts.',
+        });
+      } else {
+        toast({
+          title: 'Scan Issue',
+          description: result.error || 'Could not fully scan wallet. Try again.',
+          variant: 'destructive',
+        });
+      }
     },
     [scanForDust, safeModeEnabled, toast]
   );

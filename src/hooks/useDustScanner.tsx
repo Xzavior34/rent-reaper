@@ -34,7 +34,8 @@ interface UseDustScannerReturn {
   scanResult: ScanResult | null;
   isScanning: boolean;
   isReclaiming: boolean;
-  scanForDust: (safeModeEnabled: boolean) => Promise<void>;
+  scanError: string | null;
+  scanForDust: (safeModeEnabled: boolean) => Promise<{ success: boolean; error?: string }>;
   reclaimDust: (accountsToClose: DustAccount[]) => Promise<{ success: boolean; reclaimed: number; closed: number }>;
   toggleAccountSelection: (address: string) => void;
   selectAll: () => void;
@@ -47,6 +48,7 @@ export const useDustScanner = (): UseDustScannerReturn => {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isReclaiming, setIsReclaiming] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const getAccountAge = useCallback(
     async (accountAddress: string): Promise<number | null> => {
@@ -67,14 +69,22 @@ export const useDustScanner = (): UseDustScannerReturn => {
   );
 
   const scanForDust = useCallback(
-    async (safeModeEnabled: boolean) => {
-      if (!publicKey) return;
+    async (safeModeEnabled: boolean): Promise<{ success: boolean; error?: string }> => {
+      if (!publicKey) {
+        return { success: false, error: 'Wallet not connected' };
+      }
 
       setIsScanning(true);
+      setScanError(null);
+      
       try {
+        console.log('Starting scan on network, publicKey:', publicKey.toBase58());
+        
         const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
           programId: TOKEN_PROGRAM_ID,
         });
+
+        console.log('Found token accounts:', tokenAccounts.value.length);
 
         const dustAccounts: DustAccount[] = [];
         const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
@@ -117,14 +127,31 @@ export const useDustScanner = (): UseDustScannerReturn => {
 
         const selectableAccounts = dustAccounts.filter((a) => a.status !== 'protected');
 
+        console.log('Dust accounts found:', dustAccounts.length);
+
+        // Always set result, even if empty
         setScanResult({
           totalScanned: tokenAccounts.value.length,
           dustDetected: dustAccounts.length,
           recoverableSol: selectableAccounts.length * RENT_PER_ACCOUNT,
           accounts: dustAccounts,
         });
+
+        return { success: true };
       } catch (error) {
         console.error('Scan error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to scan wallet';
+        setScanError(errorMessage);
+        
+        // Set empty result so we still navigate to dashboard
+        setScanResult({
+          totalScanned: 0,
+          dustDetected: 0,
+          recoverableSol: 0,
+          accounts: [],
+        });
+        
+        return { success: false, error: errorMessage };
       } finally {
         setIsScanning(false);
       }
@@ -282,6 +309,7 @@ export const useDustScanner = (): UseDustScannerReturn => {
     scanResult,
     isScanning,
     isReclaiming,
+    scanError,
     scanForDust,
     reclaimDust,
     toggleAccountSelection,
