@@ -1,17 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, ParsedAccountData, ConfirmedSignatureInfo } from '@solana/web3.js';
+import { PublicKey, ParsedAccountData, ConfirmedSignatureInfo, Connection } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
   createCloseAccountInstruction,
 } from '@solana/spl-token';
 import { Transaction } from '@solana/web3.js';
+import { withRetry, getFriendlyErrorMessage } from '@/lib/rpc';
 
 // Wrapped SOL mint address
 const WSOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
 
 // Rent per token account (approximately 0.00203928 SOL)
 const RENT_PER_ACCOUNT = 0.00203928;
+
+// Max retries for RPC calls
+const MAX_RETRIES = 3;
 
 export interface DustAccount {
   address: string;
@@ -51,26 +55,36 @@ export const useDustScanner = (): UseDustScannerReturn => {
   const [scanError, setScanError] = useState<string | null>(null);
 
   const getAccountAge = useCallback(
-    async (accountAddress: string): Promise<number | null> => {
+    async (accountAddress: string, conn: Connection): Promise<number | null> => {
       try {
-        const signatures: ConfirmedSignatureInfo[] = await connection.getSignaturesForAddress(
-          new PublicKey(accountAddress),
-          { limit: 1 }
+        const signatures: ConfirmedSignatureInfo[] = await withRetry(
+          () => conn.getSignaturesForAddress(
+            new PublicKey(accountAddress),
+            { limit: 1 }
+          ),
+          { maxRetries: 2, baseDelay: 500 }
         );
         if (signatures.length > 0 && signatures[0].blockTime) {
-          return signatures[0].blockTime * 1000; // Convert to milliseconds
+          return signatures[0].blockTime * 1000;
         }
         return null;
       } catch {
+        // Non-critical - just skip age check if it fails
         return null;
       }
     },
-    [connection]
+    []
   );
 
   const scanForDust = useCallback(
     async (safeModeEnabled: boolean): Promise<{ success: boolean; error?: string }> => {
       if (!publicKey) {
+        setScanResult({
+          totalScanned: 0,
+          dustDetected: 0,
+          recoverableSol: 0,
+          accounts: [],
+        });
         return { success: false, error: 'Wallet not connected' };
       }
 
@@ -78,11 +92,19 @@ export const useDustScanner = (): UseDustScannerReturn => {
       setScanError(null);
       
       try {
-        console.log('Starting scan on network, publicKey:', publicKey.toBase58());
+        console.log('Starting scan, publicKey:', publicKey.toBase58());
         
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
-          programId: TOKEN_PROGRAM_ID,
-        });
+        // Fetch token accounts with retry
+        const tokenAccounts = await withRetry(
+          () => connection.getParsedTokenAccountsByOwner(publicKey, {
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          {
+            maxRetries: MAX_RETRIES,
+            baseDelay: 1000,
+            onRetry: (attempt) => console.log(`Retry attempt ${attempt} for token accounts...`),
+          }
+        );
 
         console.log('Found token accounts:', tokenAccounts.value.length);
 
@@ -106,10 +128,15 @@ export const useDustScanner = (): UseDustScannerReturn => {
             let createdAt: number | undefined;
             let isProtected = false;
 
+            // Safe mode age check (non-blocking - if it fails, just skip protection)
             if (safeModeEnabled) {
-              createdAt = (await getAccountAge(account.pubkey.toBase58())) ?? undefined;
-              if (createdAt && createdAt > oneDayAgo) {
-                isProtected = true;
+              try {
+                createdAt = (await getAccountAge(account.pubkey.toBase58(), connection)) ?? undefined;
+                if (createdAt && createdAt > oneDayAgo) {
+                  isProtected = true;
+                }
+              } catch {
+                // Skip age check on error - account won't be protected
               }
             }
 
@@ -140,10 +167,11 @@ export const useDustScanner = (): UseDustScannerReturn => {
         return { success: true };
       } catch (error) {
         console.error('Scan error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to scan wallet';
+        const rawError = error instanceof Error ? error : new Error(String(error));
+        const errorMessage = getFriendlyErrorMessage(rawError);
         setScanError(errorMessage);
         
-        // Set empty result so we still navigate to dashboard
+        // Always set result so we navigate to dashboard
         setScanResult({
           totalScanned: 0,
           dustDetected: 0,
@@ -162,7 +190,11 @@ export const useDustScanner = (): UseDustScannerReturn => {
   const reclaimDust = useCallback(
     async (accountsToClose: DustAccount[]) => {
       if (!publicKey || !sendTransaction) {
-        return { success: false, reclaimed: 0, closed: 0 };
+        return { success: false, reclaimed: 0, closed: 0, error: 'Wallet not connected' };
+      }
+
+      if (accountsToClose.length === 0) {
+        return { success: true, reclaimed: 0, closed: 0 };
       }
 
       setIsReclaiming(true);
@@ -202,8 +234,21 @@ export const useDustScanner = (): UseDustScannerReturn => {
             transaction.add(instruction);
           }
 
-          const signature = await sendTransaction(transaction, connection);
-          await connection.confirmTransaction(signature, 'confirmed');
+          // Send and confirm with retry
+          const signature = await withRetry(
+            async () => {
+              const sig = await sendTransaction(transaction, connection);
+              await connection.confirmTransaction(sig, 'confirmed');
+              return sig;
+            },
+            {
+              maxRetries: 2,
+              baseDelay: 2000,
+              onRetry: (attempt) => console.log(`Retry attempt ${attempt} for transaction...`),
+            }
+          );
+
+          console.log('Transaction confirmed:', signature);
 
           // Update status for closed accounts
           setScanResult((prev) => {
