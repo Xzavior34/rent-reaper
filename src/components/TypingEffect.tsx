@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 
 interface TypingEffectProps {
@@ -9,13 +9,13 @@ interface TypingEffectProps {
   onComplete?: () => void;
 }
 
-export const TypingEffect = ({
+export const TypingEffect = forwardRef<HTMLSpanElement, TypingEffectProps>(({
   text,
   delay = 0,
   speed = 50,
   className = '',
   onComplete,
-}: TypingEffectProps) => {
+}, ref) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
 
@@ -45,6 +45,7 @@ export const TypingEffect = ({
 
   return (
     <motion.span
+      ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={className}
@@ -53,4 +54,6 @@ export const TypingEffect = ({
       {!isComplete && <span className="cursor-blink" />}
     </motion.span>
   );
-};
+});
+
+TypingEffect.displayName = 'TypingEffect';
