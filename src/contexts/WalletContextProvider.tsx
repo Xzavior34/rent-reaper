@@ -28,8 +28,8 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
 
   const endpoint = useMemo(() => {
     if (network === 'mainnet-beta') {
-      // Solana public RPC blocks browser CORS requests, use Ankr free endpoint
-      return 'https://rpc.ankr.com/solana';
+      // Use PublicNode free RPC (CORS-compatible, no API key needed)
+      return 'https://solana-rpc.publicnode.com';
     }
     return clusterApiUrl(WalletAdapterNetwork.Devnet);
   }, [network]);

@@ -19,12 +19,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import type { ChainType } from '@/hooks/useChain';
 
 interface DustTableProps {
   accounts: DustAccount[];
   onToggleSelection: (address: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  chain?: ChainType;
 }
 
 export const DustTable = ({
@@ -32,8 +34,10 @@ export const DustTable = ({
   onToggleSelection,
   onSelectAll,
   onDeselectAll,
+  chain = 'solana',
 }: DustTableProps) => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const isSolana = chain === 'solana';
 
   const pendingAccounts = accounts.filter((a) => a.status === 'pending');
   const selectedCount = pendingAccounts.filter((a) => a.selected).length;
@@ -55,7 +59,7 @@ export const DustTable = ({
     const ageMs = now - createdAt;
     const days = Math.floor(ageMs / (1000 * 60 * 60 * 24));
     const hours = Math.floor((ageMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
+
     if (days === 0) {
       return `${hours}h`;
     }
@@ -108,6 +112,24 @@ export const DustTable = ({
     }
   };
 
+  const getTypeBadge = (account: DustAccount) => {
+    if (account.type === 'BEP20') {
+      return (
+        <Badge className="bg-[hsl(45,100%,50%)]/20 text-[hsl(45,100%,50%)] font-mono text-xs">
+          {account.symbol || 'BEP20'}
+        </Badge>
+      );
+    }
+    return (
+      <Badge
+        variant={account.type === 'wSOL' ? 'default' : 'secondary'}
+        className="font-mono text-xs"
+      >
+        {account.type}
+      </Badge>
+    );
+  };
+
   if (accounts.length === 0) {
     return (
       <motion.div
@@ -118,7 +140,9 @@ export const DustTable = ({
         <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
         <h3 className="text-xl font-semibold mb-2 font-mono">NO DUST FOUND</h3>
         <p className="text-muted-foreground font-mono">
-          Your wallet is clean! No empty token accounts detected.
+          {isSolana
+            ? 'Your wallet is clean! No empty token accounts detected.'
+            : 'No dust tokens found on BNB Smart Chain.'}
         </p>
       </motion.div>
     );
@@ -134,19 +158,23 @@ export const DustTable = ({
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h3 className="font-semibold font-mono text-lg text-primary">// KILL LIST</h3>
+          <h3 className="font-semibold font-mono text-lg text-primary">
+            {isSolana ? '// KILL LIST' : '// DUST TOKENS'}
+          </h3>
           <Badge variant="outline" className="font-mono">
-            {accounts.length} ACCOUNTS
+            {accounts.length} {isSolana ? 'ACCOUNTS' : 'TOKENS'}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onSelectAll} disabled={allSelected} className="font-mono text-xs">
-            SELECT ALL
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onDeselectAll} disabled={selectedCount === 0} className="font-mono text-xs">
-            DESELECT
-          </Button>
-        </div>
+        {isSolana && (
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={onSelectAll} disabled={allSelected} className="font-mono text-xs">
+              SELECT ALL
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onDeselectAll} disabled={selectedCount === 0} className="font-mono text-xs">
+              DESELECT
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -154,15 +182,22 @@ export const DustTable = ({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-border">
-              <TableHead className="w-12"></TableHead>
-              <TableHead className="font-mono text-xs text-primary">ADDRESS</TableHead>
-              <TableHead className="font-mono text-xs text-primary">TYPE</TableHead>
+              {isSolana && <TableHead className="w-12"></TableHead>}
               <TableHead className="font-mono text-xs text-primary">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  AGE
-                </div>
+                {isSolana ? 'ADDRESS' : 'CONTRACT'}
               </TableHead>
+              <TableHead className="font-mono text-xs text-primary">TYPE</TableHead>
+              {isSolana && (
+                <TableHead className="font-mono text-xs text-primary">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    AGE
+                  </div>
+                </TableHead>
+              )}
+              {!isSolana && (
+                <TableHead className="font-mono text-xs text-primary">NAME</TableHead>
+              )}
               <TableHead className="font-mono text-xs text-right text-primary">BALANCE</TableHead>
               <TableHead className="font-mono text-xs text-right text-primary">STATUS</TableHead>
             </TableRow>
@@ -170,7 +205,7 @@ export const DustTable = ({
           <TableBody>
             {accounts.map((account, index) => (
               <motion.tr
-                key={account.address}
+                key={account.address + account.mint}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.03 * index }}
@@ -178,23 +213,27 @@ export const DustTable = ({
                   account.status === 'closed' ? 'opacity-50' : ''
                 } ${account.status === 'protected' ? 'opacity-60' : ''}`}
               >
-                <TableCell>
-                  <Checkbox
-                    checked={account.selected}
-                    disabled={account.status !== 'pending'}
-                    onCheckedChange={() => onToggleSelection(account.address)}
-                  />
-                </TableCell>
+                {isSolana && (
+                  <TableCell>
+                    <Checkbox
+                      checked={account.selected}
+                      disabled={account.status !== 'pending'}
+                      onCheckedChange={() => onToggleSelection(account.address)}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <code className="font-mono text-sm">{truncateAddress(account.address)}</code>
+                    <code className="font-mono text-sm">
+                      {truncateAddress(isSolana ? account.address : (account.mint || account.address))}
+                    </code>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => copyAddress(account.address)}
+                      onClick={() => copyAddress(isSolana ? account.address : (account.mint || account.address))}
                     >
-                      {copiedAddress === account.address ? (
+                      {copiedAddress === (isSolana ? account.address : (account.mint || account.address)) ? (
                         <Check className="w-3 h-3 text-primary" />
                       ) : (
                         <Copy className="w-3 h-3" />
@@ -202,21 +241,23 @@ export const DustTable = ({
                     </Button>
                   </div>
                 </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={account.type === 'wSOL' ? 'default' : 'secondary'}
-                    className="font-mono text-xs"
-                  >
-                    {account.type}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <span className={`font-mono text-sm ${
-                    account.status === 'protected' ? 'text-accent' : 'text-muted-foreground'
-                  }`}>
-                    {getAccountAge(account.createdAt)}
-                  </span>
-                </TableCell>
+                <TableCell>{getTypeBadge(account)}</TableCell>
+                {isSolana && (
+                  <TableCell>
+                    <span className={`font-mono text-sm ${
+                      account.status === 'protected' ? 'text-accent' : 'text-muted-foreground'
+                    }`}>
+                      {getAccountAge(account.createdAt)}
+                    </span>
+                  </TableCell>
+                )}
+                {!isSolana && (
+                  <TableCell>
+                    <span className="font-mono text-sm text-muted-foreground">
+                      {account.tokenName || '—'}
+                    </span>
+                  </TableCell>
+                )}
                 <TableCell className="text-right font-mono text-sm">
                   {account.balance.toFixed(6)}
                 </TableCell>

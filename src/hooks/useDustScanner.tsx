@@ -16,11 +16,14 @@ const RENT_PER_ACCOUNT = 0.00203928;
 export interface DustAccount {
   address: string;
   mint: string;
-  type: 'wSOL' | 'Token';
+  type: 'wSOL' | 'Token' | 'BEP20';
   balance: number;
   status: 'pending' | 'processing' | 'closed' | 'error' | 'protected';
   selected: boolean;
   createdAt?: number;
+  symbol?: string;
+  tokenName?: string;
+  chain?: 'solana' | 'bnb';
 }
 
 export interface ScanResult {
