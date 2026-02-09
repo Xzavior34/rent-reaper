@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Zap, Shield, Clock, ArrowRight, Cpu, Lock } from 'lucide-react';
+import { Zap, Shield, Clock, ArrowRight, Cpu, Lock, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TypingEffect } from '@/components/TypingEffect';
 import { useState } from 'react';
+import { useChain } from '@/hooks/useChain';
+import { useEvmWallet } from '@/hooks/useEvmWallet';
 
 interface HeroSectionProps {
   onScan: () => void;
@@ -12,8 +14,13 @@ interface HeroSectionProps {
 }
 
 export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
-  const { connected } = useWallet();
+  const { connected: solConnected } = useWallet();
+  const { chain } = useChain();
+  const { connected: evmConnected, connect: connectEvm, connecting: evmConnecting } = useEvmWallet();
   const [showSubtext, setShowSubtext] = useState(false);
+
+  const isSolana = chain === 'solana';
+  const isConnected = isSolana ? solConnected : evmConnected;
 
   return (
     <section className="relative py-20 overflow-hidden">
@@ -42,11 +49,11 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             <span className="text-sm font-mono text-primary">Non-Custodial & Secure</span>
           </motion.div>
 
-          {/* Main Headline with Typing Effect */}
+          {/* Main Headline */}
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
             <span className="text-foreground">
-              <TypingEffect 
-                text="Stop Leaking Capital." 
+              <TypingEffect
+                text="Stop Leaking Capital."
                 speed={40}
                 delay={500}
                 onComplete={() => setShowSubtext(true)}
@@ -54,13 +61,13 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             </span>
             <br />
             {showSubtext && (
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-primary text-glow-green"
               >
-                <TypingEffect 
-                  text="Reclaim Your Rent." 
+                <TypingEffect
+                  text="Reclaim Your Rent."
                   speed={40}
                   delay={200}
                 />
@@ -69,18 +76,19 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
           </h1>
 
           {/* Subtext */}
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: showSubtext ? 1 : 0 }}
             transition={{ delay: 0.5 }}
             className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto font-mono"
           >
-            Automated analysis for Solana wallets. Find abandoned token accounts,
-            recover locked SOL, and clean up your wallet in one click.
+            {isSolana
+              ? 'Automated analysis for Solana wallets. Find abandoned token accounts, recover locked SOL, and clean up your wallet in one click.'
+              : 'Multi-chain dust scanner. Scan your BNB Smart Chain wallet for worthless tokens and dust balances.'}
           </motion.p>
 
           {/* Feature Pills */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: showSubtext ? 1 : 0 }}
             transition={{ delay: 0.7 }}
@@ -89,8 +97,8 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             {[
               { icon: Zap, text: 'Instant Analysis' },
               { icon: Lock, text: 'Client-Side Only' },
-              { icon: Clock, text: 'Safe Mode Protection' },
-              { icon: Cpu, text: 'Batch Processing' },
+              { icon: Clock, text: isSolana ? 'Safe Mode Protection' : 'BEP-20 Scanning' },
+              { icon: Cpu, text: isSolana ? 'Batch Processing' : 'Multi-Chain' },
             ].map((feature, index) => (
               <motion.div
                 key={feature.text}
@@ -111,22 +119,35 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             animate={{ opacity: showSubtext ? 1 : 0, scale: showSubtext ? 1 : 0.95 }}
             transition={{ delay: 1 }}
           >
-            {!connected ? (
-              <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-xl !h-14 !px-8 !text-lg !font-bold pulse-glow !font-mono" />
+            {!isConnected ? (
+              isSolana ? (
+                <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-xl !h-14 !px-8 !text-lg !font-bold pulse-glow !font-mono" />
+              ) : (
+                <Button
+                  onClick={connectEvm}
+                  disabled={evmConnecting}
+                  className="h-14 px-8 text-lg font-bold rounded-xl bg-[hsl(45,100%,50%)] text-black hover:bg-[hsl(45,100%,45%)] pulse-glow font-mono"
+                >
+                  <Wallet className="w-5 h-5 mr-2" />
+                  {evmConnecting ? 'Connecting...' : 'Connect BNB Wallet'}
+                </Button>
+              )
             ) : (
               <Button
                 size="lg"
                 onClick={onScan}
                 disabled={isScanning}
-                className="h-14 px-8 text-lg font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 pulse-glow font-mono"
+                className={`h-14 px-8 text-lg font-bold rounded-xl pulse-glow font-mono ${
+                  isSolana
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'bg-[hsl(45,100%,50%)] text-black hover:bg-[hsl(45,100%,45%)]'
+                }`}
               >
                 {isScanning ? (
-                  <>
-                    <span className="animate-pulse">SCANNING...</span>
-                  </>
+                  <span className="animate-pulse">SCANNING...</span>
                 ) : (
                   <>
-                    SCAN FOR LEAKS
+                    SCAN FOR {isSolana ? 'LEAKS' : 'DUST'}
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </>
                 )}
@@ -135,7 +156,7 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
           </motion.div>
 
           {/* Demo Stats (when not connected) */}
-          {!connected && (
+          {!isConnected && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -146,11 +167,15 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
                 // Demo Mode - Connect Wallet for Live Data
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                {[
+                {(isSolana ? [
                   { label: 'Accounts Scanned', value: '142', suffix: '', color: 'text-foreground' },
                   { label: 'Dust Detected', value: '42', suffix: '', color: 'text-accent text-glow-orange' },
                   { label: 'Recoverable', value: '0.0856', suffix: 'SOL', color: 'text-primary text-glow-green' },
-                ].map((stat, index) => (
+                ] : [
+                  { label: 'Tokens Scanned', value: '85', suffix: '', color: 'text-foreground' },
+                  { label: 'Dust Tokens', value: '23', suffix: '', color: 'text-accent text-glow-orange' },
+                  { label: 'Chains Supported', value: '2', suffix: '', color: 'text-primary text-glow-green' },
+                ]).map((stat, index) => (
                   <motion.div
                     key={stat.label}
                     initial={{ opacity: 0, y: 10 }}
