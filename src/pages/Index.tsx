@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Header } from '@/components/Header';
 import { HeroSection } from '@/components/HeroSection';
@@ -15,7 +15,7 @@ import { useConfetti } from '@/hooks/useConfetti';
 const Index = () => {
   const { connected: solConnected } = useWallet();
   const { chain } = useChain();
-  const { connected: evmConnected, address: evmAddress } = useEvmWallet();
+  const { connected: evmConnected, address: evmAddress, sendTransaction } = useEvmWallet();
   const { toast } = useToast();
   const { fireConfetti } = useConfetti();
   const [safeModeEnabled, setSafeModeEnabled] = useState(true);
@@ -24,13 +24,9 @@ const Index = () => {
   const isSolana = chain === 'solana';
   const isConnected = isSolana ? solConnected : evmConnected;
 
-  // Solana scanner
   const solScanner = useDustScanner();
-
-  // BNB scanner
   const bnbScanner = useBnbDustScanner();
 
-  // Active scanner based on chain
   const activeScanner = isSolana ? solScanner : bnbScanner;
   const { scanResult, isScanning, isReclaiming } = activeScanner;
 
@@ -75,7 +71,7 @@ const Index = () => {
   }, []);
 
   const handleReclaim = useCallback(async () => {
-    if (!scanResult || !isSolana) return;
+    if (!scanResult) return;
 
     const selectedAccounts = scanResult.accounts.filter(
       (a) => a.selected && a.status === 'pending'
@@ -83,23 +79,40 @@ const Index = () => {
 
     setShowPreview(false);
 
-    const result = await solScanner.reclaimDust(selectedAccounts);
-
-    if (result.success) {
-      fireConfetti();
-      toast({
-        title: '🎉 Reclaim Successful!',
-        description: `Reclaimed ${result.reclaimed.toFixed(4)} SOL from ${result.closed} accounts.`,
-        className: 'bg-primary/10 border-primary',
-      });
+    if (isSolana) {
+      const result = await solScanner.reclaimDust(selectedAccounts);
+      if (result.success) {
+        fireConfetti();
+        toast({
+          title: '🎉 Reclaim Successful!',
+          description: `Reclaimed ${result.reclaimed.toFixed(4)} SOL from ${result.closed} accounts.`,
+          className: 'bg-primary/10 border-primary',
+        });
+      } else {
+        toast({
+          title: 'Reclaim Failed',
+          description: 'Some accounts could not be closed. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } else {
-      toast({
-        title: 'Reclaim Failed',
-        description: 'Some accounts could not be closed. Please try again.',
-        variant: 'destructive',
-      });
+      const result = await bnbScanner.reclaimDust(selectedAccounts, sendTransaction);
+      if (result.success) {
+        fireConfetti();
+        toast({
+          title: '🎉 Sweep Successful!',
+          description: `Swept ${result.swept} dust token${result.swept > 1 ? 's' : ''} to burn address.${result.failed > 0 ? ` ${result.failed} failed.` : ''}`,
+          className: 'bg-primary/10 border-primary',
+        });
+      } else {
+        toast({
+          title: 'Sweep Failed',
+          description: 'Could not sweep dust tokens. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
-  }, [scanResult, solScanner, toast, fireConfetti, isSolana]);
+  }, [scanResult, solScanner, bnbScanner, toast, fireConfetti, isSolana, sendTransaction]);
 
   const handleSafeModeChange = useCallback((enabled: boolean) => {
     setSafeModeEnabled(enabled);
@@ -111,7 +124,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative crt-flicker">
-      {/* CRT Scanlines overlay */}
       <div className="fixed inset-0 pointer-events-none scanlines z-50" />
 
       <Header />
@@ -138,17 +150,16 @@ const Index = () => {
 
       <Footer />
 
-      {/* Transaction Preview Modal (Solana only) */}
-      {isSolana && (
-        <TransactionPreview
-          isOpen={showPreview}
-          onClose={handleClosePreview}
-          onConfirm={handleReclaim}
-          accounts={selectedAccounts}
-          totalSol={scanResult?.recoverableSol || 0}
-          isLoading={isReclaiming}
-        />
-      )}
+      {/* Transaction Preview Modal */}
+      <TransactionPreview
+        isOpen={showPreview}
+        onClose={handleClosePreview}
+        onConfirm={handleReclaim}
+        accounts={selectedAccounts}
+        totalSol={scanResult?.recoverableSol || 0}
+        isLoading={isReclaiming}
+        chain={chain}
+      />
     </div>
   );
 };

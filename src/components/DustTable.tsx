@@ -165,16 +165,14 @@ export const DustTable = ({
             {accounts.length} {isSolana ? 'ACCOUNTS' : 'TOKENS'}
           </Badge>
         </div>
-        {isSolana && (
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onSelectAll} disabled={allSelected} className="font-mono text-xs">
-              SELECT ALL
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onDeselectAll} disabled={selectedCount === 0} className="font-mono text-xs">
-              DESELECT
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onSelectAll} disabled={allSelected} className="font-mono text-xs">
+            SELECT ALL
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDeselectAll} disabled={selectedCount === 0} className="font-mono text-xs">
+            DESELECT
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -182,7 +180,7 @@ export const DustTable = ({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-border">
-              {isSolana && <TableHead className="w-12"></TableHead>}
+              <TableHead className="w-12"></TableHead>
               <TableHead className="font-mono text-xs text-primary">
                 {isSolana ? 'ADDRESS' : 'CONTRACT'}
               </TableHead>
@@ -213,15 +211,13 @@ export const DustTable = ({
                   account.status === 'closed' ? 'opacity-50' : ''
                 } ${account.status === 'protected' ? 'opacity-60' : ''}`}
               >
-                {isSolana && (
-                  <TableCell>
+                <TableCell>
                     <Checkbox
                       checked={account.selected}
                       disabled={account.status !== 'pending'}
                       onCheckedChange={() => onToggleSelection(account.address)}
                     />
                   </TableCell>
-                )}
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <code className="font-mono text-sm">

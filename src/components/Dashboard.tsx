@@ -163,16 +163,16 @@ export const Dashboard = ({
         </div>
 
         {/* Dust Table */}
-        <DustTable
-          accounts={scanResult.accounts}
-          onToggleSelection={onToggleSelection}
-          onSelectAll={onSelectAll}
-          onDeselectAll={onDeselectAll}
-          chain={chain}
-        />
+          <DustTable
+            accounts={scanResult.accounts}
+            onToggleSelection={onToggleSelection}
+            onSelectAll={onSelectAll}
+            onDeselectAll={onDeselectAll}
+            chain={chain}
+          />
 
-        {/* Reclaim Button (Solana only) */}
-        {isSolana && selectedCount > 0 && (
+        {/* Reclaim / Sweep Button */}
+        {selectedCount > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -182,33 +182,29 @@ export const Dashboard = ({
               size="lg"
               onClick={onReclaim}
               disabled={isReclaiming}
-              className="h-16 px-12 text-xl font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 pulse-glow"
+              className={`h-16 px-12 text-xl font-bold rounded-xl pulse-glow ${
+                isSolana
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  : 'bg-[hsl(45,100%,50%)] text-black hover:bg-[hsl(45,100%,45%)]'
+              }`}
             >
               {isReclaiming ? (
                 <>
                   <Loader2 className="w-6 h-6 mr-3 animate-spin" />
                   Processing...
                 </>
-              ) : (
+              ) : isSolana ? (
                 <>
                   <Trash2 className="w-6 h-6 mr-3" />
                   Sweep & Reclaim ({selectedCount} accounts • {selectedSol.toFixed(4)} SOL {solPrice ? `≈ ${formatUsd(selectedSol)}` : ''})
                 </>
+              ) : (
+                <>
+                  <Trash2 className="w-6 h-6 mr-3" />
+                  Sweep {selectedCount} Dust Token{selectedCount > 1 ? 's' : ''} 🔥
+                </>
               )}
             </Button>
-          </motion.div>
-        )}
-
-        {/* BNB Info Message */}
-        {!isSolana && scanResult.accounts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-8 p-4 rounded-xl bg-card border border-border text-center"
-          >
-            <p className="text-sm font-mono text-muted-foreground">
-              💡 BNB dust tokens shown for review. Rent reclamation is a Solana-specific feature.
-            </p>
           </motion.div>
         )}
       </div>
