@@ -3,6 +3,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, ParsedAccountData, ConfirmedSignatureInfo } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
   createCloseAccountInstruction,
 } from '@solana/spl-token';
 import { Transaction } from '@solana/web3.js';
@@ -85,16 +86,23 @@ export const useDustScanner = (): UseDustScannerReturn => {
       try {
         console.log('Starting scan on network, publicKey:', publicKey.toBase58());
         
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
-          programId: TOKEN_PROGRAM_ID,
-        });
+        // Scan both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID for full coverage
+        const [legacyAccounts, token2022Accounts] = await Promise.all([
+          connection.getParsedTokenAccountsByOwner(publicKey, {
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          connection.getParsedTokenAccountsByOwner(publicKey, {
+            programId: TOKEN_2022_PROGRAM_ID,
+          }).catch(() => ({ value: [] })), // Graceful fallback if Token-2022 not supported
+        ]);
 
-        console.log('Found token accounts:', tokenAccounts.value.length);
+        const allTokenAccounts = [...legacyAccounts.value, ...token2022Accounts.value];
+        console.log('Found token accounts:', allTokenAccounts.length, `(legacy: ${legacyAccounts.value.length}, token-2022: ${token2022Accounts.value.length})`);
 
         const dustAccounts: DustAccount[] = [];
         const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
 
-        for (const account of tokenAccounts.value) {
+        for (const account of allTokenAccounts) {
           const parsedData = account.account.data as ParsedAccountData;
           const info = parsedData.parsed?.info;
 
@@ -136,7 +144,7 @@ export const useDustScanner = (): UseDustScannerReturn => {
 
         // Always set result, even if empty
         setScanResult({
-          totalScanned: tokenAccounts.value.length,
+          totalScanned: allTokenAccounts.length,
           dustDetected: dustAccounts.length,
           recoverableSol: selectableAccounts.length * RENT_PER_ACCOUNT,
           accounts: dustAccounts,
