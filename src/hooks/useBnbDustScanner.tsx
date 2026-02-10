@@ -2,10 +2,20 @@ import { useState, useCallback } from 'react';
 import type { DustAccount, ScanResult } from './useDustScanner';
 
 const BSC_RPC = 'https://bsc-dataseed.binance.org';
+const BURN_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+
+// ERC20 transfer function signature: transfer(address,uint256)
+const encodeTransfer = (to: string, amount: bigint): string => {
+  const fnSig = '0xa9059cbb'; // keccak256("transfer(address,uint256)") first 4 bytes
+  const paddedTo = to.slice(2).padStart(64, '0');
+  const paddedAmount = amount.toString(16).padStart(64, '0');
+  return `${fnSig}${paddedTo}${paddedAmount}`;
+};
 
 export const useBnbDustScanner = () => {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isReclaiming, setIsReclaiming] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
   const scanForDust = useCallback(async (address: string): Promise<{ success: boolean; error?: string }> => {
@@ -15,8 +25,6 @@ export const useBnbDustScanner = () => {
     setScanError(null);
 
     try {
-      console.log('Starting BNB scan for:', address);
-
       // Use Ankr multichain API for token balances
       const response = await fetch('https://rpc.ankr.com/multichain', {
         method: 'POST',
@@ -34,9 +42,8 @@ export const useBnbDustScanner = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.error) {
-        console.warn('Ankr API error, trying fallback:', data.error);
         throw new Error(data.error.message || 'Ankr API error');
       }
 
@@ -46,26 +53,27 @@ export const useBnbDustScanner = () => {
       for (const asset of allAssets) {
         const balance = parseFloat(asset.balance || '0');
         const balanceUsd = parseFloat(asset.balanceUsd || '0');
+        const decimals = parseInt(asset.tokenDecimals || '18', 10);
 
         // Consider dust: USD value < $0.01 or zero balance, skip native BNB
         const isDust = (balanceUsd < 0.01 || balance === 0) && asset.tokenType !== 'NATIVE';
 
-        if (isDust) {
+        if (isDust && asset.contractAddress) {
           dustAccounts.push({
-            address: asset.contractAddress || address,
-            mint: asset.contractAddress || '',
+            address: asset.contractAddress,
+            mint: asset.contractAddress,
             type: 'BEP20',
             balance,
             status: 'pending',
-            selected: false, // BNB dust can't be reclaimed
-            symbol: asset.tokenSymbol,
-            tokenName: asset.tokenName,
+            selected: balance > 0, // Auto-select tokens with non-zero balance (can be swept)
+            symbol: asset.tokenSymbol || 'Unknown',
+            tokenName: asset.tokenName || 'Unknown Token',
             chain: 'bnb',
+            decimals,
+            rawBalance: asset.balanceRawInteger || '0',
           });
         }
       }
-
-      console.log('BNB dust tokens found:', dustAccounts.length, 'out of', allAssets.length, 'total assets');
 
       setScanResult({
         totalScanned: allAssets.length,
@@ -76,8 +84,6 @@ export const useBnbDustScanner = () => {
 
       return { success: true };
     } catch (error) {
-      console.warn('Ankr multichain failed, using BSC RPC fallback:', error);
-
       // Fallback: get native BNB balance only
       try {
         const balanceResponse = await fetch(BSC_RPC, {
@@ -92,13 +98,10 @@ export const useBnbDustScanner = () => {
         });
 
         const balanceData = await balanceResponse.json();
-        
+
         if (balanceData.error) {
           throw new Error(balanceData.error.message || 'BSC RPC error');
         }
-
-        const bnbBalance = parseInt(balanceData.result, 16) / 1e18;
-        console.log('Native BNB balance:', bnbBalance);
 
         setScanResult({
           totalScanned: 1,
@@ -109,7 +112,6 @@ export const useBnbDustScanner = () => {
 
         return { success: true };
       } catch (fallbackError) {
-        console.error('BSC fallback also failed:', fallbackError);
         const errorMessage = fallbackError instanceof Error ? fallbackError.message : 'Failed to scan BNB wallet';
         setScanError(errorMessage);
         setScanResult({
@@ -123,6 +125,84 @@ export const useBnbDustScanner = () => {
     } finally {
       setIsScanning(false);
     }
+  }, []);
+
+  const reclaimDust = useCallback(async (
+    accountsToClose: DustAccount[],
+    sendTransaction: (to: string, data: string) => Promise<string>
+  ): Promise<{ success: boolean; swept: number; failed: number }> => {
+    const toSweep = accountsToClose.filter(a => a.selected && a.status === 'pending' && a.balance > 0);
+
+    if (toSweep.length === 0) {
+      return { success: false, swept: 0, failed: 0 };
+    }
+
+    setIsReclaiming(true);
+    let swept = 0;
+    let failed = 0;
+
+    // Update status to processing
+    setScanResult(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        accounts: prev.accounts.map(a =>
+          toSweep.find(s => s.address === a.address)
+            ? { ...a, status: 'processing' as const }
+            : a
+        ),
+      };
+    });
+
+    for (const account of toSweep) {
+      try {
+        const rawBalance = account.rawBalance || '0';
+        const amount = BigInt(rawBalance);
+        
+        if (amount <= 0n) {
+          // Skip zero balance
+          setScanResult(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              accounts: prev.accounts.map(a =>
+                a.address === account.address ? { ...a, status: 'closed' as const, selected: false } : a
+              ),
+            };
+          });
+          swept++;
+          continue;
+        }
+
+        const data = encodeTransfer(BURN_ADDRESS, amount);
+        await sendTransaction(account.address, data);
+
+        setScanResult(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            accounts: prev.accounts.map(a =>
+              a.address === account.address ? { ...a, status: 'closed' as const, selected: false } : a
+            ),
+          };
+        });
+        swept++;
+      } catch (err) {
+        setScanResult(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            accounts: prev.accounts.map(a =>
+              a.address === account.address ? { ...a, status: 'error' as const } : a
+            ),
+          };
+        });
+        failed++;
+      }
+    }
+
+    setIsReclaiming(false);
+    return { success: swept > 0, swept, failed };
   }, []);
 
   const toggleAccountSelection = useCallback((addr: string) => {
@@ -167,9 +247,10 @@ export const useBnbDustScanner = () => {
   return {
     scanResult,
     isScanning,
-    isReclaiming: false,
+    isReclaiming,
     scanError,
     scanForDust,
+    reclaimDust,
     toggleAccountSelection,
     selectAll,
     deselectAll,

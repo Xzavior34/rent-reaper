@@ -24,6 +24,8 @@ export interface DustAccount {
   symbol?: string;
   tokenName?: string;
   chain?: 'solana' | 'bnb';
+  decimals?: number;
+  rawBalance?: string;
 }
 
 export interface ScanResult {
