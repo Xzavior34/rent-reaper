@@ -12,22 +12,30 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    {
+      name: "buffer-polyfill",
+      transformIndexHtml() {
+        return [
+          {
+            tag: "script",
+            attrs: { type: "module" },
+            children: `import { Buffer } from "buffer"; globalThis.Buffer = Buffer;`,
+            injectTo: "head-prepend" as const,
+          },
+        ];
+      },
+    },
+    react(),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       buffer: "buffer/",
     },
   },
-  define: {
-    "globalThis.Buffer": "globalThis.Buffer",
-  },
   optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: "globalThis",
-      },
-    },
     include: ["buffer"],
   },
 }));
