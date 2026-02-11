@@ -5,7 +5,6 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
   TorusWalletAdapter,
-  LedgerWalletAdapter,
   CoinbaseWalletAdapter,
   TrustWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
@@ -50,7 +49,6 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
         },
       }),
       new TorusWalletAdapter(),
-      new LedgerWalletAdapter(),
       new CoinbaseWalletAdapter(),
     ],
     [walletNetwork]
