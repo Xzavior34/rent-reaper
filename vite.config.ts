@@ -16,6 +16,18 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      buffer: "buffer/",
     },
+  },
+  define: {
+    "globalThis.Buffer": "globalThis.Buffer",
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: "globalThis",
+      },
+    },
+    include: ["buffer"],
   },
 }));
