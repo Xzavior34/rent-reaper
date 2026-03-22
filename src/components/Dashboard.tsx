@@ -6,6 +6,7 @@ import { DustTable } from '@/components/DustTable';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { useSolPrice } from '@/hooks/useSolPrice';
 
 interface DashboardProps {
@@ -19,11 +20,13 @@ interface DashboardProps {
   onDeselectAll: () => void;
   safeModeEnabled: boolean;
   onSafeModeChange: (enabled: boolean) => void;
+  scanProgress: number;
 }
 
 export const Dashboard = ({
   scanResult, isScanning, isReclaiming, onScan, onReclaim,
   onToggleSelection, onSelectAll, onDeselectAll, safeModeEnabled, onSafeModeChange,
+  scanProgress,
 }: DashboardProps) => {
   const { solPrice, formatUsd, isLoading: priceLoading } = useSolPrice();
 
@@ -32,6 +35,11 @@ export const Dashboard = ({
   const selectedSol = scanResult.accounts
     .filter(a => a.selected && a.status === 'pending')
     .reduce((sum, a) => sum + a.balance, 0);
+
+  // Show user-facing net (85%) in the sweep button
+  const grossRentSol = selectedCount * 0.00203928;
+  const feeSol = Math.floor((selectedCount * 2039280 * 1500) / 10_000) / 1e9;
+  const netSol = grossRentSol - feeSol;
 
   return (
     <section className="py-12">
@@ -55,6 +63,17 @@ export const Dashboard = ({
             Rescan
           </Button>
         </motion.div>
+
+        {/* Scan progress bar */}
+        {isScanning && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6 space-y-2">
+            <div className="flex justify-between text-xs font-mono text-muted-foreground">
+              <span>Scanning wallet...</span>
+              <span>{scanProgress}%</span>
+            </div>
+            <Progress value={scanProgress} className="h-2" />
+          </motion.div>
+        )}
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 mb-4 text-sm">
           <TrendingUp className="w-4 h-4 text-primary" />
@@ -82,7 +101,7 @@ export const Dashboard = ({
               {isReclaiming ? (
                 <><Loader2 className="w-6 h-6 mr-3 animate-spin" />Processing...</>
               ) : (
-                <><Trash2 className="w-6 h-6 mr-3" />Sweep & Reclaim ({selectedCount} accounts • {selectedSol.toFixed(4)} SOL {solPrice ? `≈ ${formatUsd(selectedSol)}` : ''})</>
+                <><Trash2 className="w-6 h-6 mr-3" />Sweep ({selectedCount} • ~{netSol.toFixed(4)} SOL net {solPrice ? `≈ ${formatUsd(netSol)}` : ''})</>
               )}
             </Button>
           </motion.div>
