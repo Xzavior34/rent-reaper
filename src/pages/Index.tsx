@@ -5,7 +5,8 @@ import { HeroSection } from '@/components/HeroSection';
 import { Dashboard } from '@/components/Dashboard';
 import { Footer } from '@/components/Footer';
 import { TransactionPreview } from '@/components/TransactionPreview';
-import { useDustScanner } from '@/hooks/useDustScanner';
+import { SuccessReceipt } from '@/components/SuccessReceipt';
+import { useDustScanner, ReclaimResult } from '@/hooks/useDustScanner';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/useConfetti';
 
@@ -15,9 +16,10 @@ const Index = () => {
   const { fireConfetti } = useConfetti();
   const [safeModeEnabled, setSafeModeEnabled] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [receiptData, setReceiptData] = useState<{ reclaimedSol: number; closedCount: number; signatures: string[] } | null>(null);
 
   const scanner = useDustScanner();
-  const { scanResult, isScanning, isReclaiming } = scanner;
+  const { scanResult, isScanning, isReclaiming, scanProgress } = scanner;
 
   const handleScan = useCallback(
     async (safeMode: boolean = safeModeEnabled) => {
@@ -46,18 +48,18 @@ const Index = () => {
     const selectedAccounts = scanResult.accounts.filter(a => a.selected && a.status === 'pending');
     setShowPreview(false);
 
-    const result = await scanner.reclaimDust(selectedAccounts);
+    const result: ReclaimResult = await scanner.reclaimDust(selectedAccounts);
     if (result.success) {
       fireConfetti();
-      toast({
-        title: '🎉 Reclaim Successful!',
-        description: `Reclaimed ${result.reclaimed.toFixed(4)} SOL from ${result.closed} accounts.`,
-        className: 'bg-primary/10 border-primary',
+      setReceiptData({
+        reclaimedSol: result.reclaimed,
+        closedCount: result.closed,
+        signatures: result.signatures,
       });
     } else {
       toast({
         title: 'Reclaim Failed',
-        description: 'Some accounts could not be closed. Please try again.',
+        description: result.error || 'Some accounts could not be closed. Please try again.',
         variant: 'destructive',
       });
     }
@@ -86,6 +88,7 @@ const Index = () => {
             onDeselectAll={scanner.deselectAll}
             safeModeEnabled={safeModeEnabled}
             onSafeModeChange={handleSafeModeChange}
+            scanProgress={scanProgress}
           />
         )}
       </main>
@@ -98,6 +101,15 @@ const Index = () => {
         totalSol={scanResult?.recoverableSol || 0}
         isLoading={isReclaiming}
       />
+      {receiptData && (
+        <SuccessReceipt
+          isOpen={!!receiptData}
+          onClose={() => setReceiptData(null)}
+          reclaimedSol={receiptData.reclaimedSol}
+          closedCount={receiptData.closedCount}
+          signatures={receiptData.signatures}
+        />
+      )}
     </div>
   );
 };
