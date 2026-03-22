@@ -19,7 +19,7 @@ const RENT_PER_ACCOUNT_LAMPORTS = 2039280; // exact lamports
 const RENT_PER_ACCOUNT = RENT_PER_ACCOUNT_LAMPORTS / 1e9;
 
 // KoraKeep treasury — replace with your actual treasury pubkey
-const KORAKEEP_TREASURY = new PublicKey('KoRAkEEpYoUR7rEAsuRYpUBk3yHEr3XXXXXXXXXXXXX');
+const KORAKEEP_TREASURY = new PublicKey('7jzJhYbF1LfQKhUboorZoHpbzRnEDy4nE9Yoy1ysaK8P');
 
 const FEE_BPS = 1500; // 15% in basis points
 
