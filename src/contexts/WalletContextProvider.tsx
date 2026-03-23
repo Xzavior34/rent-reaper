@@ -19,7 +19,7 @@ import { useNetwork } from '@/hooks/useNetwork';
 
 import '@solana/wallet-adapter-react-ui/styles.css';
 
-// WalletConnect Project ID - Get yours at https://cloud.walletconnect.com
+// WalletConnect Project ID
 const WALLETCONNECT_PROJECT_ID = 'e899c82be21d4acca2c8aec45e893598';
 
 interface WalletContextProviderProps {
@@ -31,8 +31,10 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
 
   const endpoint = useMemo(() => {
     if (network === 'mainnet-beta') {
-      return 'https://solana-rpc.publicnode.com';
+      // 👇 YOUR PRIVATE HELIUS VIP LANE 👇
+      return 'https://mainnet.helius-rpc.com/?api-key=38b96f0d-2564-4f36-a980-44bde1a3b433';
     }
+    // Still use standard public node for Devnet testing
     return clusterApiUrl(WalletAdapterNetwork.Devnet);
   }, [network]);
 
@@ -46,7 +48,8 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
         addressSelector: createDefaultAddressSelector(),
         appIdentity: { name: 'KoraKeep', uri: window.location.origin },
         authorizationResultCache: createDefaultAuthorizationResultCache(),
-        chain: walletNetwork === WalletAdapterNetwork.Mainnet ? 'solana:mainnet' : 'solana:devnet',
+        // Fixed chain ID logic for mobile
+        chain: network === 'mainnet-beta' ? 'solana:mainnet' : 'solana:devnet',
         onWalletNotFound: createDefaultWalletNotFoundHandler(),
       }),
       new PhantomWalletAdapter(),
@@ -61,7 +64,7 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
         },
       }),
     ],
-    [walletNetwork]
+    [walletNetwork, network]
   );
 
   const onError = useCallback((error: Error) => {
