@@ -7,7 +7,12 @@ import { TorusWalletAdapter } from '@solana/wallet-adapter-torus';
 import { CoinbaseWalletAdapter } from '@solana/wallet-adapter-coinbase';
 import { TrustWalletAdapter } from '@solana/wallet-adapter-trust';
 import { WalletConnectWalletAdapter } from '@walletconnect/solana-adapter';
-import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
+import {
+  SolanaMobileWalletAdapter,
+  createDefaultAddressSelector,
+  createDefaultAuthorizationResultCache,
+  createDefaultWalletNotFoundHandler,
+} from '@solana-mobile/wallet-adapter-mobile';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { clusterApiUrl } from '@solana/web3.js';
 import { useNetwork } from '@/hooks/useNetwork';
@@ -38,8 +43,11 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
   const wallets = useMemo(
     () => [
       new SolanaMobileWalletAdapter({
+        addressSelector: createDefaultAddressSelector(),
         appIdentity: { name: 'KoraKeep', uri: window.location.origin },
+        authorizationResultCache: createDefaultAuthorizationResultCache(),
         chain: walletNetwork === WalletAdapterNetwork.Mainnet ? 'solana:mainnet' : 'solana:devnet',
+        onWalletNotFound: createDefaultWalletNotFoundHandler(),
       }),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
