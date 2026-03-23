@@ -113,6 +113,7 @@ const Index = () => {
           signatures={receiptData.signatures}
         />
       )}
+      <WalletModal isOpen={walletModalOpen} onClose={closeWalletModal} />
     </div>
   );
 };
