@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Zap, Shield, Clock, ArrowRight, Cpu, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { WalletButton } from '@/components/WalletButton';
 import { TypingEffect } from '@/components/TypingEffect';
 import { useState } from 'react';
 
