@@ -6,6 +6,8 @@ import { Dashboard } from '@/components/Dashboard';
 import { Footer } from '@/components/Footer';
 import { TransactionPreview } from '@/components/TransactionPreview';
 import { SuccessReceipt } from '@/components/SuccessReceipt';
+import { WalletModal } from '@/components/WalletModal';
+import { useWalletModal } from '@/contexts/WalletModalContext';
 import { useDustScanner, ReclaimResult } from '@/hooks/useDustScanner';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/useConfetti';
