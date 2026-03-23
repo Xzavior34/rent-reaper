@@ -1,9 +1,9 @@
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useNetwork } from '@/hooks/useNetwork';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { BotStatus } from '@/components/BotStatus';
+import { WalletButton } from '@/components/WalletButton';
 import { Zap, Shield } from 'lucide-react';
 
 export const Header = () => {
