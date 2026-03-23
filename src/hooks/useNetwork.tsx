@@ -11,25 +11,9 @@ interface NetworkContextType {
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export const NetworkProvider = ({ children }: { children: ReactNode }) => {
-  // 1. Check local storage first, default to MAINNET if nothing is saved
-  const [network, setNetworkState] = useState<NetworkType>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('korakeep-network');
-      if (saved === 'mainnet-beta' || saved === 'devnet') {
-        return saved;
-      }
-    }
-    // 👇 DEFAULT CHANGED TO MAINNET 👇
-    return 'mainnet-beta'; 
-  });
-
-  // 2. Save the choice to local storage whenever the user toggles it
-  const setNetwork = (newNetwork: NetworkType) => {
-    setNetworkState(newNetwork);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('korakeep-network', newNetwork);
-    }
-  };
+  // Removed the localStorage logic that caused the freeze.
+  // We are just setting a clean, simple default to Mainnet.
+  const [network, setNetwork] = useState<NetworkType>('mainnet-beta');
 
   return (
     <NetworkContext.Provider
@@ -47,11 +31,10 @@ export const NetworkProvider = ({ children }: { children: ReactNode }) => {
 export const useNetwork = () => {
   const context = useContext(NetworkContext);
   if (!context) {
-    // Return default values if used outside provider
     return {
-      network: 'mainnet-beta' as NetworkType, // 👇 CHANGED HERE
+      network: 'mainnet-beta' as NetworkType,
       setNetwork: () => {},
-      isMainnet: true, // 👇 AND HERE
+      isMainnet: true,
     };
   }
   return context;
