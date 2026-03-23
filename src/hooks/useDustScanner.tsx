@@ -309,6 +309,11 @@ export const useDustScanner = (): UseDustScannerReturn => {
             );
           }
 
+          // 👇 ADD THESE 3 LINES RIGHT HERE 👇
+          const latestBlockhash = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = latestBlockhash.blockhash;
+          transaction.feePayer = publicKey;
+          // 👆
           try {
             const signature = await sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'confirmed');
