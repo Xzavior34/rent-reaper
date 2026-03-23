@@ -11,7 +11,25 @@ interface NetworkContextType {
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export const NetworkProvider = ({ children }: { children: ReactNode }) => {
-  const [network, setNetwork] = useState<NetworkType>('devnet');
+  // 1. Check local storage first, default to MAINNET if nothing is saved
+  const [network, setNetworkState] = useState<NetworkType>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('korakeep-network');
+      if (saved === 'mainnet-beta' || saved === 'devnet') {
+        return saved;
+      }
+    }
+    // 👇 DEFAULT CHANGED TO MAINNET 👇
+    return 'mainnet-beta'; 
+  });
+
+  // 2. Save the choice to local storage whenever the user toggles it
+  const setNetwork = (newNetwork: NetworkType) => {
+    setNetworkState(newNetwork);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('korakeep-network', newNetwork);
+    }
+  };
 
   return (
     <NetworkContext.Provider
@@ -29,11 +47,11 @@ export const NetworkProvider = ({ children }: { children: ReactNode }) => {
 export const useNetwork = () => {
   const context = useContext(NetworkContext);
   if (!context) {
-    // Return default values if used outside provider (for initial setup)
+    // Return default values if used outside provider
     return {
-      network: 'devnet' as NetworkType,
+      network: 'mainnet-beta' as NetworkType, // 👇 CHANGED HERE
       setNetwork: () => {},
-      isMainnet: false,
+      isMainnet: true, // 👇 AND HERE
     };
   }
   return context;
