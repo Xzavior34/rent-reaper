@@ -7,6 +7,7 @@ import { TorusWalletAdapter } from '@solana/wallet-adapter-torus';
 import { CoinbaseWalletAdapter } from '@solana/wallet-adapter-coinbase';
 import { TrustWalletAdapter } from '@solana/wallet-adapter-trust';
 import { WalletConnectWalletAdapter } from '@walletconnect/solana-adapter';
+import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { clusterApiUrl } from '@solana/web3.js';
 import { useNetwork } from '@/hooks/useNetwork';
@@ -25,7 +26,6 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
 
   const endpoint = useMemo(() => {
     if (network === 'mainnet-beta') {
-      // Use PublicNode free RPC (CORS-compatible, no API key needed)
       return 'https://solana-rpc.publicnode.com';
     }
     return clusterApiUrl(WalletAdapterNetwork.Devnet);
@@ -37,17 +37,21 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
 
   const wallets = useMemo(
     () => [
+      new SolanaMobileWalletAdapter({
+        appIdentity: { name: 'KoraKeep', uri: window.location.origin },
+        cluster: walletNetwork === WalletAdapterNetwork.Mainnet ? 'mainnet-beta' : 'devnet',
+      }),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
       new TrustWalletAdapter(),
+      new CoinbaseWalletAdapter(),
+      new TorusWalletAdapter(),
       new WalletConnectWalletAdapter({
         network: walletNetwork,
         options: {
           projectId: WALLETCONNECT_PROJECT_ID,
         },
       }),
-      new TorusWalletAdapter(),
-      new CoinbaseWalletAdapter(),
     ],
     [walletNetwork]
   );
