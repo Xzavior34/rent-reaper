@@ -39,7 +39,7 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
     () => [
       new SolanaMobileWalletAdapter({
         appIdentity: { name: 'KoraKeep', uri: window.location.origin },
-        cluster: walletNetwork === WalletAdapterNetwork.Mainnet ? 'mainnet-beta' : 'devnet',
+        chain: walletNetwork === WalletAdapterNetwork.Mainnet ? 'solana:mainnet' : 'solana:devnet',
       }),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
