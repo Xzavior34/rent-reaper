@@ -14,6 +14,7 @@ import { useConfetti } from '@/hooks/useConfetti';
 
 const Index = () => {
   const { connected } = useWallet();
+  const { isOpen: walletModalOpen, close: closeWalletModal } = useWalletModal();
   const { toast } = useToast();
   const { fireConfetti } = useConfetti();
   const [safeModeEnabled, setSafeModeEnabled] = useState(true);
