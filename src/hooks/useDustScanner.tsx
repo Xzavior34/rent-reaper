@@ -7,6 +7,8 @@ import {
   Transaction,
   SystemProgram,
   ComputeBudgetProgram,
+  TransactionMessage,
+  VersionedTransaction
 } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
@@ -133,7 +135,6 @@ export const useDustScanner = (): UseDustScannerReturn => {
       try {
         console.log('Starting scan, publicKey:', publicKey.toBase58());
 
-        // Fetch both token program accounts with individual error handling
         let legacyAccounts: { value: any[] } = { value: [] };
         let token2022Accounts: { value: any[] } = { value: [] };
 
@@ -176,7 +177,6 @@ export const useDustScanner = (): UseDustScannerReturn => {
           const balance = info.tokenAmount?.uiAmount || 0;
           const isWsol = mint === WSOL_MINT.toBase58();
 
-          // STRICT: non-wSOL must be exactly 0 balance; wSOL must be < 0.001
           const isDust = balance === 0 || (isWsol && balance < 0.001);
 
           if (isDust) {
@@ -190,7 +190,6 @@ export const useDustScanner = (): UseDustScannerReturn => {
                   isProtected = true;
                 }
               } catch {
-                // If we can't check age, protect by default in safe mode
                 isProtected = true;
               }
             }
@@ -206,7 +205,6 @@ export const useDustScanner = (): UseDustScannerReturn => {
             });
           }
 
-          // Update progress from 50% to 90%
           if (total > 0) {
             setScanProgress(50 + Math.floor((idx / total) * 40));
           }
@@ -280,25 +278,21 @@ export const useDustScanner = (): UseDustScannerReturn => {
           const batch = toClose.slice(i, i + BATCH_SIZE);
           const transaction = new Transaction();
 
-          // Add priority fee for congestion resilience (small: 5000 micro-lamports per CU)
           transaction.add(
             ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5000 })
           );
 
-          // Close accounts — rent returns to the *connected wallet* (publicKey) first
           for (const account of batch) {
             const instruction = createCloseAccountInstruction(
               new PublicKey(account.address),
-              publicKey, // destination: rent goes to user wallet
-              publicKey  // authority
+              publicKey,
+              publicKey
             );
             transaction.add(instruction);
           }
 
-          // Compute the 15% fee for this batch using integer math
           const { feeLamports } = splitRent(batch.length);
 
-          // Atomic fee transfer to KoraKeep treasury in the SAME transaction
           if (feeLamports > 0) {
             transaction.add(
               SystemProgram.transfer({
@@ -309,13 +303,21 @@ export const useDustScanner = (): UseDustScannerReturn => {
             );
           }
 
-          // 👇 ADD THESE 3 LINES RIGHT HERE 👇
+          // Fetch the latest blockhash
           const latestBlockhash = await connection.getLatestBlockhash();
-          transaction.recentBlockhash = latestBlockhash.blockhash;
-          transaction.feePayer = publicKey;
-          // 👆
+          
+          // Package it as an immutable V0 Transaction so mobile wallets don't corrupt it
+          const messageV0 = new TransactionMessage({
+            payerKey: publicKey,
+            recentBlockhash: latestBlockhash.blockhash,
+            instructions: transaction.instructions,
+          }).compileToV0Message();
+
+          const v0Transaction = new VersionedTransaction(messageV0);
+
           try {
-            const signature = await sendTransaction(transaction, connection);
+            // Send the V0 transaction
+            const signature = await sendTransaction(v0Transaction, connection);
             await connection.confirmTransaction(signature, 'confirmed');
 
             allSignatures.push(signature);
@@ -336,7 +338,6 @@ export const useDustScanner = (): UseDustScannerReturn => {
           } catch (batchError) {
             console.error('Batch error:', batchError);
 
-            // Mark this batch as error but continue with remaining batches
             setScanResult((prev) => {
               if (!prev) return prev;
               return {
@@ -349,7 +350,6 @@ export const useDustScanner = (): UseDustScannerReturn => {
               };
             });
 
-            // If entire tx failed, stop processing
             const errorMsg = humanizeRpcError(batchError);
             if (totalClosed === 0) {
               return {
@@ -360,12 +360,10 @@ export const useDustScanner = (): UseDustScannerReturn => {
                 error: errorMsg,
               };
             }
-            // Partial success — break and report what we got
             break;
           }
         }
 
-        // Use integer math for final reclaimed amount (user's 85%)
         const { userLamports } = splitRent(totalClosed);
         const reclaimedSol = userLamports / 1e9;
 
