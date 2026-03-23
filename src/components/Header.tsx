@@ -56,18 +56,8 @@ export const Header = () => {
           {/* Bot Status */}
           <BotStatus className="hidden md:flex" />
 
-          {/* Wallet Address Display */}
-          {connected && publicKey && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 border border-border">
-              <div className="w-2 h-2 rounded-full bg-primary pulse-dot" />
-              <code className="text-xs font-mono text-muted-foreground">
-                {truncateSolAddress(publicKey.toBase58())}
-              </code>
-            </div>
-          )}
-
           {/* Wallet Button */}
-          <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-lg !h-10 !font-semibold" />
+          <WalletButton className="h-10 rounded-lg font-semibold" />
         </div>
       </div>
     </header>

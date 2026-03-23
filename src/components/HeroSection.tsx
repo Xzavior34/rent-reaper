@@ -90,7 +90,7 @@ export const HeroSection = ({ onScan, isScanning }: HeroSectionProps) => {
             transition={{ delay: 1 }}
           >
             {!connected ? (
-              <WalletMultiButton className="!bg-primary !text-primary-foreground hover:!bg-primary/90 !rounded-xl !h-14 !px-8 !text-lg !font-bold pulse-glow !font-mono" />
+              <WalletButton size="lg" className="h-14 px-8 text-lg font-bold rounded-xl pulse-glow" />
             ) : (
               <Button
                 size="lg"
