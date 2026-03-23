@@ -1,4 +1,3 @@
-import { useWallet } from '@solana/wallet-adapter-react';
 import { useNetwork } from '@/hooks/useNetwork';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -7,11 +6,7 @@ import { WalletButton } from '@/components/WalletButton';
 import { Zap, Shield } from 'lucide-react';
 
 export const Header = () => {
-  const { connected, publicKey } = useWallet();
   const { network, setNetwork, isMainnet } = useNetwork();
-
-  const truncateSolAddress = (address: string) =>
-    `${address.slice(0, 4)}...${address.slice(-4)}`;
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
