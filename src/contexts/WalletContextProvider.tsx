@@ -71,7 +71,7 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} onError={onError} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
+        <WalletModalContextProvider>{children}</WalletModalContextProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
