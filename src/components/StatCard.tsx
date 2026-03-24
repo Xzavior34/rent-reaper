@@ -69,18 +69,18 @@ export const StatCard = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.5 }}
-      className={`p-6 rounded-xl bg-card border ${variantStyles[variant]} backdrop-blur-sm`}
+      className={`p-4 sm:p-6 rounded-xl bg-card border ${variantStyles[variant]} backdrop-blur-sm`}
     >
-      <div className="flex items-start justify-between mb-4">
-        <p className="text-sm text-muted-foreground font-medium">{label}</p>
-        <div className={`p-2 rounded-lg ${iconStyles[variant]}`}>
-          <Icon className="w-5 h-5" />
+      <div className="flex items-start justify-between mb-2 sm:mb-4">
+        <p className="text-xs sm:text-sm text-muted-foreground font-medium">{label}</p>
+        <div className={`p-1.5 sm:p-2 rounded-lg ${iconStyles[variant]}`}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </div>
-      <p className={`text-4xl font-bold font-mono ${textStyles[variant]}`}>
-        {prefix && <span className="text-lg mr-0.5">{prefix}</span>}
+      <p className={`text-2xl sm:text-4xl font-bold font-mono ${textStyles[variant]}`}>
+        {prefix && <span className="text-sm sm:text-lg mr-0.5">{prefix}</span>}
         {decimals > 0 ? displayValue.toFixed(decimals) : Math.floor(displayValue)}
-        {suffix && <span className="text-lg ml-1 text-muted-foreground">{suffix}</span>}
+        {suffix && <span className="text-sm sm:text-lg ml-0.5 sm:ml-1 text-muted-foreground">{suffix}</span>}
       </p>
     </motion.div>
   );

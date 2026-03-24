@@ -36,29 +36,29 @@ export const Dashboard = ({
     .filter(a => a.selected && a.status === 'pending')
     .reduce((sum, a) => sum + a.balance, 0);
 
-  // Show user-facing net (85%) in the sweep button
   const grossRentSol = selectedCount * 0.00203928;
   const feeSol = Math.floor((selectedCount * 2039280 * 1500) / 10_000) / 1e9;
   const netSol = grossRentSol - feeSol;
 
   return (
-    <section className="py-12">
-      <div className="container mx-auto px-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
+    <section className="py-6 sm:py-12">
+      <div className="container mx-auto px-3 sm:px-4">
+        {/* Controls row */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-card border border-border w-full sm:w-auto">
             <div className="flex items-center gap-2">
-              <ShieldCheck className={`w-5 h-5 ${safeModeEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
-              <Label htmlFor="safe-mode" className="font-medium">Safe Mode</Label>
+              <ShieldCheck className={`w-4 h-4 sm:w-5 sm:h-5 ${safeModeEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+              <Label htmlFor="safe-mode" className="font-medium text-sm">Safe Mode</Label>
             </div>
             <Switch id="safe-mode" checked={safeModeEnabled} onCheckedChange={onSafeModeChange} />
-            <span className="text-xs text-muted-foreground font-mono">
-              {safeModeEnabled ? 'Ignoring accounts < 24h old' : 'All accounts included'}
+            <span className="text-[10px] sm:text-xs text-muted-foreground font-mono hidden sm:inline">
+              {safeModeEnabled ? 'Ignoring < 24h' : 'All included'}
             </span>
             {protectedCount > 0 && (
-              <span className="text-xs text-accent font-mono">({protectedCount} protected)</span>
+              <span className="text-[10px] sm:text-xs text-accent font-mono">({protectedCount} protected)</span>
             )}
           </div>
-          <Button variant="outline" onClick={() => onScan(safeModeEnabled)} disabled={isScanning}>
+          <Button variant="outline" onClick={() => onScan(safeModeEnabled)} disabled={isScanning} className="w-full sm:w-auto">
             {isScanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
             Rescan
           </Button>
@@ -75,13 +75,15 @@ export const Dashboard = ({
           </motion.div>
         )}
 
+        {/* SOL Price */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 mb-4 text-sm">
           <TrendingUp className="w-4 h-4 text-primary" />
           <span className="text-muted-foreground">SOL Price:</span>
           <span className="font-mono text-primary">{priceLoading ? '...' : solPrice ? `$${solPrice.toFixed(2)}` : 'N/A'}</span>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <StatCard label="Total Scanned" value={scanResult.totalScanned} icon={Search} variant="default" delay={0} />
           <StatCard label="Dust Detected" value={scanResult.dustDetected} icon={Trash2} variant="warning" delay={0.1} />
           <StatCard label="Recoverable SOL" value={scanResult.recoverableSol} suffix="SOL" decimals={4} icon={ShieldCheck} variant="success" delay={0.2} />
@@ -91,17 +93,17 @@ export const Dashboard = ({
         <DustTable accounts={scanResult.accounts} onToggleSelection={onToggleSelection} onSelectAll={onSelectAll} onDeselectAll={onDeselectAll} />
 
         {selectedCount > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8 flex justify-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6 sm:mt-8 flex justify-center px-2">
             <Button
               size="lg"
               onClick={onReclaim}
               disabled={isReclaiming}
-              className="h-16 px-12 text-xl font-bold rounded-xl pulse-glow bg-primary text-primary-foreground hover:bg-primary/90"
+              className="h-12 sm:h-16 px-6 sm:px-12 text-sm sm:text-xl font-bold rounded-xl pulse-glow bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >
               {isReclaiming ? (
-                <><Loader2 className="w-6 h-6 mr-3 animate-spin" />Processing...</>
+                <><Loader2 className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 animate-spin" />Processing...</>
               ) : (
-                <><Trash2 className="w-6 h-6 mr-3" />Sweep ({selectedCount} • ~{netSol.toFixed(4)} SOL net {solPrice ? `≈ ${formatUsd(netSol)}` : ''})</>
+                <><Trash2 className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />Sweep ({selectedCount} • ~{netSol.toFixed(4)} SOL{solPrice ? ` ≈ ${formatUsd(netSol)}` : ''})</>
               )}
             </Button>
           </motion.div>
